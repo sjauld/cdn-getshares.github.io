@@ -1,7 +1,7 @@
 fs = require "fs"
 path = require "path"
 
-{print} = require "sys"
+{log} = require "console"
 {spawn} = require "child_process"
 
 build = (options, callback) ->
@@ -22,11 +22,11 @@ build = (options, callback) ->
   convert = () ->
     coffee = spawn "coffee", ["-m", "-c", "-o", out, src]
     coffee.stderr.on "data", (data) -> process.stderr.write data.toString()
-    coffee.stdout.on "data", (data) -> print data.toString()
+    coffee.stdout.on "data", (data) -> log data.toString()
     coffee.on "exit", (code) ->
       fs.readdir out, (err, files) ->
-        return process.stderr.write err if err? 
-        print "coffee done #{src}/* -> #{out}/* (#{files.length} files)\n"
+        return process.stderr.write err if err?
+        log "coffee done #{src}/* -> #{out}/* (#{files.length} files)\n"
         files.forEach (file, index) ->
           if /\.js$/.test file
             js = path.join out, file
@@ -35,16 +35,16 @@ build = (options, callback) ->
             mapUrl = file.replace /\.js$/, ".min.map"
             uglify = spawn "uglifyjs", [js, "-o", min, "--source-map", map, "--comments", "all"]
             uglify.stderr.on "data", (data) -> process.stderr.write data.toString()
-            uglify.stdout.on "data", (data) -> print data.toString()
-            uglify.on "exit", (code) -> print "uglify done #{js} -> #{min} (#{map})\n"
+            uglify.stdout.on "data", (data) -> log data.toString()
+            uglify.on "exit", (code) -> log "uglify done #{js} -> #{min} (#{map})\n"
       callback?() if code is 0
     stylus = spawn "stylus", [src, "--out", out, "--compress", "--include", "node_modules/nib/lib"]
     stylus.stderr.on "data", (data) -> process.stderr.write data.toString()
-    stylus.stdout.on "data", (data) -> print data.toString()
+    stylus.stdout.on "data", (data) -> log data.toString()
     stylus.on "exit", (code) ->
-      print "stylus done #{src} -> #{out} (minified)\n"
+      log "stylus done #{src} -> #{out} (minified)\n"
       fs.readdir out, (err, files) ->
-        return process.stderr.write err if err? 
+        return process.stderr.write err if err?
         for file in files
           if /\.css$/.test file
             srcFile = path.join out, file
@@ -52,8 +52,8 @@ build = (options, callback) ->
             fs.renameSync srcFile, dstFile
         stylus = spawn "stylus", [src, "--out", out, "--include", "node_modules/nib/lib"]
         stylus.stderr.on "data", (data) -> process.stderr.write data.toString()
-        stylus.stdout.on "data", (data) -> print data.toString()
-        stylus.on "exit", (code) -> print "stylus done #{src} -> #{out}\n"
+        stylus.stdout.on "data", (data) -> log data.toString()
+        stylus.on "exit", (code) -> log "stylus done #{src} -> #{out}\n"
   init convert
 
 option "", "--out [OUT*]", "define out path"
